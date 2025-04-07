@@ -303,13 +303,26 @@ contract LoanManager {
         return totalDue - loans[loanId].repaidAmount;
     }
 
-    function getLoanDetails(uint loanId) public view returns (
+    function getLoanBasicDetails(uint loanId) public view returns (
         address borrower,
         address lender,
         uint amount,
         uint interestRate,
         uint duration,
-        uint startDate,
+        uint startDate
+    ) {
+        Loan storage loan = loans[loanId];
+        return (
+            loan.borrower,
+            loan.lender,
+            loan.amount,
+            loan.interestRate,
+            loan.duration,
+            loan.startDate
+        );
+    }
+
+    function getLoanExtendedDetails(uint loanId) public view returns (
         uint endDate,
         LoanState state,
         uint repaidAmount,
@@ -319,12 +332,6 @@ contract LoanManager {
     ) {
         Loan storage loan = loans[loanId];
         return (
-            loan.borrower,
-            loan.lender,
-            loan.amount,
-            loan.interestRate,
-            loan.duration,
-            loan.startDate,
             loan.endDate,
             loan.state,
             loan.repaidAmount,
@@ -333,6 +340,7 @@ contract LoanManager {
             calculateTotalDue(loanId)
         );
     }
+
 
     function getTotalLoans() public view returns (uint) {
         return loanIdCounter;
