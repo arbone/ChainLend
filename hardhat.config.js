@@ -1,5 +1,4 @@
-require("@nomicfoundation/hardhat-ethers");
-require("@nomicfoundation/hardhat-verify");
+require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
 
 module.exports = {
@@ -10,13 +9,16 @@ module.exports = {
         enabled: true,
         runs: 200
       },
-      viaIR: true
+      viaIR: false
     }
   },
   networks: {
     sepolia: {
       url: `https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY]
+    },
+    hardhat: {
+      chainId: 31337
     }
   },
   etherscan: {
