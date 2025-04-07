@@ -86,20 +86,17 @@ contract LoanManager {
         owner = msg.sender;
     }
 
-    // Funzione di pausa di emergenza
     function togglePause() public onlyOwner {
         paused = !paused;
         emit ContractPaused(paused);
     }
 
-    // Funzione per aggiungere stake (necessario per votare)
     function addStake() public payable {
         require(msg.value > 0, "Must stake some ETH");
         stakingBalances[msg.sender] += msg.value;
         emit StakeAdded(msg.sender, msg.value);
     }
 
-    // Funzione per ritirare lo stake
     function withdrawStake(uint amount) public {
         require(stakingBalances[msg.sender] >= amount, "Insufficient stake");
         stakingBalances[msg.sender] -= amount;
@@ -182,30 +179,25 @@ contract LoanManager {
     {
         Loan storage loan = loans[loanId];
         require(loan.state == LoanState.Active, "Loan is not active");
-        
         uint oldRate = loan.interestRate;
         loan.interestRate = newRate;
-        
         emit InterestRateChanged(loanId, oldRate, newRate);
     }
 
     function proposeRateChange(uint newRate) public notPaused {
         require(stakingBalances[msg.sender] > 0, "Must have stake to propose");
-        
         uint proposalId = proposalIdCounter++;
         Proposal storage proposal = proposals[proposalId];
         proposal.proposalId = proposalId;
         proposal.newRate = newRate;
         proposal.endTime = block.timestamp + VOTING_PERIOD;
         proposal.state = ProposalState.Active;
-        
         emit ProposalCreated(proposalId, newRate);
     }
 
     function vote(uint proposalId, bool support) public notPaused {
         require(stakingBalances[msg.sender] > 0, "Must have stake to vote");
         Proposal storage proposal = proposals[proposalId];
-        
         require(proposal.state == ProposalState.Active, "Proposal not active");
         require(block.timestamp < proposal.endTime, "Voting period ended");
         require(!proposal.hasVoted[msg.sender], "Already voted");
@@ -276,5 +268,85 @@ contract LoanManager {
 
     function setAuthorizedLender(address lender, bool authorized) public onlyOwner {
         authorizedLenders[lender] = authorized;
+    }
+
+    // Nuove funzioni getter
+    function getStakeBalance(address staker) public view returns (uint) {
+        return stakingBalances[staker];
+    }
+
+    function getProposal(uint proposalId) public view returns (
+        uint _proposalId,
+        uint newRate,
+        uint votesFor,
+        uint votesAgainst,
+        uint endTime,
+        ProposalState state
+    ) {
+        Proposal storage proposal = proposals[proposalId];
+        return (
+            proposal.proposalId,
+            proposal.newRate,
+            proposal.votesFor,
+            proposal.votesAgainst,
+            proposal.endTime,
+            proposal.state
+        );
+    }
+
+    function getLoanState(uint loanId) public view returns (LoanState) {
+        return loans[loanId].state;
+    }
+
+    function getRemainingAmount(uint loanId) public view returns (uint) {
+        uint totalDue = calculateTotalDue(loanId);
+        return totalDue - loans[loanId].repaidAmount;
+    }
+
+    function getLoanDetails(uint loanId) public view returns (
+        address borrower,
+        address lender,
+        uint amount,
+        uint interestRate,
+        uint duration,
+        uint startDate,
+        uint endDate,
+        LoanState state,
+        uint repaidAmount,
+        uint lastRepaymentDate,
+        uint remainingAmount,
+        uint totalDue
+    ) {
+        Loan storage loan = loans[loanId];
+        return (
+            loan.borrower,
+            loan.lender,
+            loan.amount,
+            loan.interestRate,
+            loan.duration,
+            loan.startDate,
+            loan.endDate,
+            loan.state,
+            loan.repaidAmount,
+            loan.lastRepaymentDate,
+            getRemainingAmount(loanId),
+            calculateTotalDue(loanId)
+        );
+    }
+
+    function getTotalLoans() public view returns (uint) {
+        return loanIdCounter;
+    }
+
+    function getTotalProposals() public view returns (uint) {
+        return proposalIdCounter;
+    }
+
+    function hasVotedForProposal(uint proposalId, address voter) public view returns (bool) {
+        return proposals[proposalId].hasVoted[voter];
+    }
+
+    function getTotalStaked() public view returns (uint) {
+        return address(this).balance;
     }
 }

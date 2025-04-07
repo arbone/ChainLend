@@ -1,32 +1,36 @@
 const hre = require("hardhat");
+const fs = require("fs");
 
 async function main() {
-    try {
-        // Deploy InterestLib
-        console.log("Deploying InterestLib...");
-        const InterestLib = await hre.ethers.getContractFactory("InterestLib");
-        const interestLib = await InterestLib.deploy();
-        await interestLib.waitForDeployment();
-        const interestLibAddress = await interestLib.getAddress();
-        console.log("InterestLib deployed to:", interestLibAddress);
+    // Deploy InterestLib
+    const InterestLib = await hre.ethers.getContractFactory("InterestLib");
+    const interestLib = await InterestLib.deploy();
+    await interestLib.waitForDeployment();
+    
+    console.log("InterestLib deployed to:", await interestLib.getAddress());
 
-        // Deploy LoanManager passando l'indirizzo della libreria
-        console.log("Deploying LoanManager...");
-        const LoanManager = await hre.ethers.getContractFactory("LoanManager");
-        const loanManager = await LoanManager.deploy(interestLibAddress);
-        await loanManager.waitForDeployment();
-        const loanManagerAddress = await loanManager.getAddress();
-        console.log("LoanManager deployed to:", loanManagerAddress);
+    // Deploy LoanManager
+    const LoanManager = await hre.ethers.getContractFactory("LoanManager");
+    const loanManager = await LoanManager.deploy(await interestLib.getAddress());
+    await loanManager.waitForDeployment();
 
-    } catch (error) {
-        console.error("Error during deployment:", error);
-        throw error;
-    }
+    console.log("LoanManager deployed to:", await loanManager.getAddress());
+
+    // Salva gli indirizzi in un file
+    const addresses = {
+        InterestLib: await interestLib.getAddress(),
+        LoanManager: await loanManager.getAddress()
+    };
+
+    fs.writeFileSync(
+        'deployed-addresses.json',
+        JSON.stringify(addresses, null, 2)
+    );
+
+    console.log("Indirizzi salvati in deployed-addresses.json");
 }
 
-main()
-    .then(() => process.exit(0))
-    .catch((error) => {
-        console.error(error);
-        process.exit(1);
-    });
+main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+});
