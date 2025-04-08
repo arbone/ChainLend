@@ -1,6 +1,6 @@
 {
   "network": "sepolia",
-  "interestLib": "0x634FFC3f7Ff1227f51B542174e379A70ebC7D929",
-  "loanManager": "0x0c8cafeED382c761f065A59a1709276Ce4881c2b",
-  "timestamp": "2025-04-07T19:31:58.501Z"
+  "interestLib": "0xBf831d03FC5250Af98312C1A23d9BE58267Ae972",
+  "loanManager": "0xE4B09Ce012C8FD54DFc013974095bDBdbBf3aA74",
+  "timestamp": "2025-04-08T16:09:06.847Z"
 }

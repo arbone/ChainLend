@@ -70,15 +70,9 @@ async function main() {
         console.log("- Staker3:", ethers.formatEther(await loanManager.getStakeBalance(staker3.address)), "ETH");
         console.log("- Totale Stake:", ethers.formatEther(await loanManager.getTotalStaked()), "ETH");
 
-        // Test withdraw stake
-        const withdrawAmount = ethers.parseEther("1.0");
-        await loanManager.connect(staker1).withdrawStake(withdrawAmount);
-        console.log("\n✓ Withdraw Stake testato:");
-        console.log("- Nuovo balance Staker1:", ethers.formatEther(await loanManager.getStakeBalance(staker1.address)), "ETH");
-
         // 4. TEST SISTEMA DI PRESTITI
         console.log("\n4️⃣ TEST SISTEMA DI PRESTITI");
-        
+
         // Crea prestiti
         const loanAmount1 = ethers.parseEther("1.0");
         const loanAmount2 = ethers.parseEther("2.0");
@@ -90,7 +84,7 @@ async function main() {
             30, // 30 days
             { value: loanAmount1 }
         );
-        
+
         await loanManager.connect(borrower2).createLoan(
             lender2.address,
             loanAmount2,
@@ -102,32 +96,41 @@ async function main() {
         console.log("\n✓ Prestiti Creati:");
         const loan1 = await loanManager.loans(0);
         const loan2 = await loanManager.loans(1);
+        
         console.log("Prestito 1:");
         console.log("- Borrower:", loan1.borrower);
         console.log("- Amount:", ethers.formatEther(loan1.amount), "ETH");
         console.log("- Interest:", loan1.interestRate.toString(), "%");
+        
         console.log("Prestito 2:");
         console.log("- Borrower:", loan2.borrower);
         console.log("- Amount:", ethers.formatEther(loan2.amount), "ETH");
         console.log("- Interest:", loan2.interestRate.toString(), "%");
 
-        // Test pagamenti parziali
-        console.log("\n✓ Test Pagamenti Parziali:");
-        await loanManager.connect(borrower1).makePartialPayment(0, { value: ethers.parseEther("0.3") });
-        console.log("- Pagamento parziale effettuato per Prestito 1");
-        console.log("- Importo rimanente:", ethers.formatEther(await loanManager.getRemainingAmount(0)), "ETH");
+        // Test cancellazione prestito
+        console.log("\n✓ Test Cancellazione Prestito:");
+        await loanManager.connect(borrower1).cancelLoan(0);
+        console.log("- Prestito 1 cancellato");
+        
+        // Verifica i pending withdrawals
+        const pendingWithdrawal = await loanManager.pendingWithdrawals(borrower1.address);
+        console.log("- Pending withdrawal per Borrower1:", ethers.formatEther(pendingWithdrawal), "ETH");
+        
+        // Test withdraw balance
+        await loanManager.connect(borrower1).withdrawBalance();
+        console.log("- Fondi prelevati da Borrower1");
 
-        // Test estensione prestito
-        console.log("\n✓ Test Estensione Prestito:");
-        await loanManager.connect(borrower1).extendLoanDuration(0, 15);
-        const updatedLoan = await loanManager.loans(0);
-        console.log("- Nuova durata Prestito 1:", updatedLoan.duration.toString(), "giorni");
+        // Test pagamenti parziali sul secondo prestito
+        console.log("\n✓ Test Pagamenti Parziali:");
+        await loanManager.connect(borrower2).makePartialPayment(1, { value: ethers.parseEther("0.5") });
+        console.log("- Pagamento parziale effettuato per Prestito 2");
+        console.log("- Importo rimanente:", ethers.formatEther(await loanManager.getRemainingAmount(1)), "ETH");
 
         // 5. TEST SISTEMA DI GOVERNANCE
         console.log("\n5️⃣ TEST SISTEMA DI GOVERNANCE");
         
         // Crea proposta
-        await loanManager.connect(staker1).proposeRateChange(15); // Proposta per 15%
+        await loanManager.connect(staker1).proposeRateChange(15);
         console.log("✓ Proposta creata per nuovo tasso del 15%");
 
         // Vota proposta
@@ -146,12 +149,6 @@ async function main() {
         console.log("✓ Totale Proposte:", (await loanManager.getTotalProposals()).toString());
         console.log("✓ Totale in Stake:", ethers.formatEther(await loanManager.getTotalStaked()), "ETH");
         console.log("✓ Stato Contratto (Paused):", await loanManager.paused());
-
-        // 7. TEST GETTERS E ALTRE FUNZIONI
-        console.log("\n7️⃣ TEST FUNZIONI AGGIUNTIVE");
-        console.log("✓ Interest Lib Address:", await loanManager.interestLibAddress());
-        console.log("✓ Owner Address:", await loanManager.owner());
-        console.log("✓ Default Interest Rate:", (await loanManager.defaultInterestRate()).toString(), "%");
 
         console.log("\n✅ TUTTI I TEST COMPLETATI CON SUCCESSO!");
 

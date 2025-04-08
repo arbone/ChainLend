@@ -330,5 +330,92 @@ describe("LoanManager Extended Features", function () {
             expect(interestDue).to.equal(expectedInterest);
             expect(totalDue).to.equal(expectedTotal);
         });
+    }); 
+    
+    
+    describe("Loan Cancellation", function () {
+        let newLoanId;
+        const loanAmount = ethers.parseEther("1");
+    
+        beforeEach(async function () {
+            await loanManager.connect(borrower).createLoan(
+                lender.address,
+                loanAmount,
+                10,
+                30,
+                { value: loanAmount }
+            );
+            newLoanId = await loanManager.loanIdCounter() - BigInt(1);
+        });
+    
+        it("Should allow cancellation by the borrower and return funds", async function () {
+            // Ottieni il saldo iniziale del borrower
+            const borrowerBalanceBefore = await ethers.provider.getBalance(borrower.address);
+    
+            // Cancella il prestito
+            const cancelTx = await loanManager.connect(borrower).cancelLoan(newLoanId);
+            const cancelReceipt = await cancelTx.wait();
+            const cancelGasCost = cancelReceipt.gasUsed * cancelReceipt.gasPrice;
+    
+            // Verifica che il prestito sia stato cancellato
+            const loan = await loanManager.loans(newLoanId);
+            expect(loan.state).to.equal(2); // Cancelled
+    
+            // Verifica i pending withdrawals
+            const pendingAmount = await loanManager.pendingWithdrawals(borrower.address);
+            expect(pendingAmount).to.equal(loanAmount);
+    
+            // Preleva i fondi
+            const withdrawTx = await loanManager.connect(borrower).withdrawBalance();
+            const withdrawReceipt = await withdrawTx.wait();
+            const withdrawGasCost = withdrawReceipt.gasUsed * withdrawReceipt.gasPrice;
+    
+            // Calcola il gas totale speso
+            const totalGasCost = cancelGasCost + withdrawGasCost;
+    
+            // Ottieni il saldo finale del borrower
+            const borrowerBalanceAfter = await ethers.provider.getBalance(borrower.address);
+    
+            // Verifica che il saldo sia corretto (considerando il gas speso)
+            expect(borrowerBalanceAfter).to.be.closeTo(
+                borrowerBalanceBefore - totalGasCost + loanAmount,
+                ethers.parseEther("0.001") // Margine di tolleranza
+            );
+    
+            // Verifica che i pending withdrawals siano stati azzerati
+            expect(await loanManager.pendingWithdrawals(borrower.address)).to.equal(0);
+        });
+    
+        it("Should not allow cancellation if the loan is not active", async function () {
+            const totalDue = await loanManager.calculateTotalDue(newLoanId);
+            await loanManager.connect(borrower).makePartialPayment(newLoanId, { value: totalDue });
+    
+            await expect(
+                loanManager.connect(borrower).cancelLoan(newLoanId)
+            ).to.be.revertedWith("Loan not active");
+        });
+    
+        it("Should not allow cancellation by unauthorized users", async function () {
+            await expect(
+                loanManager.connect(staker1).cancelLoan(newLoanId)
+            ).to.be.revertedWith("Not authorized to cancel loan");
+        });
+    
+        it("Should not allow cancellation for partially repaid loans", async function () {
+            const partialPayment = ethers.parseEther("0.5");
+            await loanManager.connect(borrower).makePartialPayment(newLoanId, { value: partialPayment });
+    
+            await expect(
+                loanManager.connect(borrower).cancelLoan(newLoanId)
+            ).to.be.revertedWith("Loan already partially repaid");
+        });
+    
+        it("Should not allow withdrawal with no pending funds", async function () {
+            await expect(
+                loanManager.connect(borrower).withdrawBalance()
+            ).to.be.revertedWith("No funds to withdraw");
+        });
     });    
+    
+    
 });

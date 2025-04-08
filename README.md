@@ -1,8 +1,20 @@
 ```markdown
-# 🏦 LoanManager - Sistema di Prestiti Decentralizzato
+# 🏦 ChainLend - Sistema di Prestiti Decentralizzato P2P
 
 ## 📑 Descrizione
-LoanManager è un sistema di prestiti peer-to-peer basato su blockchain sviluppato per Bonny, una startup marchigiana che mira a semplificare l'accesso al credito. Il sistema permette agli utenti di effettuare e ricevere prestiti in modo decentralizzato, con gestione automatizzata di interessi e penali.
+ChainLend è un sistema di prestiti peer-to-peer basato su blockchain sviluppato per Bonny, una startup marchigiana che mira a semplificare l'accesso al credito. Il sistema permette agli utenti di effettuare e ricevere prestiti in modo decentralizzato, con gestione automatizzata di interessi e penali.
+
+## 📑 Il Progetto e il Cliente
+
+### Chi è Bonny
+Bonny è una startup marchigiana attiva da tre anni, impegnata nella semplificazione della burocrazia per i cittadini italiani. La loro missione è facilitare il rapporto tra cittadini e istituzioni, aiutando le persone a scoprire e ottenere bonus e agevolazioni fiscali in modo semplice e trasparente.
+
+### Vision del Cliente
+📑 Semplificare la vita dei cittadini italiani, rendendo la burocrazia più semplice e migliorando il loro benessere.
+
+### Il Problema da Risolvere
+Bonny ha identificato una criticità nell'accesso al credito per le persone con limitate risorse finanziarie. ChainLend nasce come soluzione blockchain per democratizzare l'accesso ai prestiti attraverso un sistema P2P decentralizzato.
+
 
 ## 🌟 Caratteristiche Principali
 
@@ -11,6 +23,8 @@ LoanManager è un sistema di prestiti peer-to-peer basato su blockchain sviluppa
 - 📊 Calcolo automatico di interessi e penali
 - 🔒 Sistema di sicurezza anti-reentrancy
 - ⏰ Gestione delle scadenze dei prestiti
+- 💰 Pagamenti parziali e totali
+- 🚫 Sistema di annullamento prestiti
 
 ### Governance e Staking
 - 🏛️ Sistema di governance decentralizzata
@@ -27,8 +41,6 @@ LoanManager è un sistema di prestiti peer-to-peer basato su blockchain sviluppa
 - Solidity ^0.8.28
 - Hardhat
 - OpenZeppelin Contracts
-- Ethers.js
-- Node.js
 
 ## 📦 Installazione
 

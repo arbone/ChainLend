@@ -9,7 +9,12 @@ contract LoanManager {
     address public owner;
     bool public paused;
 
-    enum LoanState { Active, Repaid, Defaulted, Cancelled }
+    enum LoanState {
+        Active,     // 0
+        Repaid,     // 1
+        Cancelled,  // 2
+        Defaulted   // 3 (opzionale)
+    }
     enum ProposalState { Active, Approved, Rejected }
 
     struct Loan {
@@ -49,6 +54,7 @@ contract LoanManager {
     mapping(address => uint) public borrowerLimits;
     mapping(address => bool) public authorizedLenders;
     mapping(address => uint) public stakingBalances;
+    mapping(address => uint256) public pendingWithdrawals;
 
     event LoanCreated(uint indexed loanId, address indexed borrower, address indexed lender, uint amount);
     event LoanRepaid(uint indexed loanId, address indexed borrower, uint amount);
@@ -63,6 +69,15 @@ contract LoanManager {
     event ContractPaused(bool paused);
     event StakeAdded(address indexed staker, uint amount);
     event StakeWithdrawn(address indexed staker, uint amount);
+    event LoanCancelled(
+        uint256 loanId,
+        address borrower,
+        address lender,
+        uint256 amount
+    );
+    // Aggiungi questo evento se non esiste già
+    event WithdrawalCompleted(address indexed user, uint256 amount);
+
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function");
@@ -107,43 +122,44 @@ contract LoanManager {
         emit StakeWithdrawn(msg.sender, amount);
     }
 
-    function createLoan(
-        address lender,
-        uint amount,
-        uint interestRate,
-        uint durationInDays
-    ) public payable notPaused {
-        require(msg.value == amount, "Must send exact loan amount");
-        require(lender != address(0), "Invalid lender address");
-        require(amount > 0, "Amount must be greater than 0");
-        require(durationInDays > 0, "Duration must be greater than 0");
-        require(borrowerLimits[msg.sender] == 0 || 
-                borrowerLimits[msg.sender] >= amount, 
-                "Amount exceeds borrower limit");
+// Modifica la funzione createLoan
+function createLoan(
+    address lender,
+    uint amount,
+    uint interestRate,
+    uint durationInDays
+) public payable notPaused {
+    require(msg.value == amount, "Must send exact loan amount");
+    require(lender != address(0), "Invalid lender address");
+    require(amount > 0, "Amount must be greater than 0");
+    require(durationInDays > 0, "Duration must be greater than 0");
+    require(
+        borrowerLimits[msg.sender] == 0 || borrowerLimits[msg.sender] >= amount, 
+        "Amount exceeds borrower limit"
+    );
 
-        uint loanId = loanIdCounter++;
+    uint loanId = loanIdCounter++;
 
-        // Aggiunta dei nuovi campi penaltyAmount e paidPenalties
-        loans[loanId] = Loan({
-            borrower: msg.sender,
-            lender: lender,
-            amount: amount,
-            interestRate: interestRate,
-            duration: durationInDays,
-            startDate: block.timestamp,
-            endDate: block.timestamp + (durationInDays * 1 days),
-            state: LoanState.Active,
-            repaidAmount: 0,
-            lastRepaymentDate: 0,
-            penaltyAmount: 0,         // Inizialmente nessuna penale
-            paidPenalties: 0          // Nessuna penale pagata
-        });
+    loans[loanId] = Loan({
+        borrower: msg.sender,
+        lender: lender,
+        amount: amount,
+        interestRate: interestRate,
+        duration: durationInDays,
+        startDate: block.timestamp,
+        endDate: block.timestamp + (durationInDays * 1 days),
+        state: LoanState.Active,
+        repaidAmount: 0,
+        lastRepaymentDate: 0,
+        penaltyAmount: 0,
+        paidPenalties: 0
+    });
 
-        // Invia l'importo del prestito al prestatore
-        payable(msg.sender).transfer(amount);
+    // Invece di trasferire direttamente, aggiungiamo ai pending withdrawals del lender
+    pendingWithdrawals[lender] += amount;
 
-        emit LoanCreated(loanId, msg.sender, lender, amount);   
-    }
+    emit LoanCreated(loanId, msg.sender, lender, amount);
+}
 
     function calculateDetailedAmounts(uint loanId) public view returns (
         uint totalDue, 
@@ -333,6 +349,48 @@ contract LoanManager {
             return a < b ? a : b;
     }
     
+    // Modifica la funzione cancelLoan
+    function cancelLoan(uint256 loanId) external {
+        Loan storage loan = loans[loanId];
+        
+        require(loan.state == LoanState.Active, "Loan not active");
+        require(
+            msg.sender == loan.borrower || msg.sender == loan.lender,
+            "Not authorized to cancel loan"
+        );
+        require(loan.repaidAmount == 0, "Loan already partially repaid");
+
+        // Cambia lo stato del prestito
+        loan.state = LoanState.Cancelled;
+        
+        // Aggiungi l'importo ai prelievi in sospeso del borrower
+        pendingWithdrawals[loan.borrower] += loan.amount;
+
+        // Se il lender aveva dei fondi pending, li rimuoviamo
+        if (pendingWithdrawals[loan.lender] >= loan.amount) {
+            pendingWithdrawals[loan.lender] -= loan.amount;
+        }
+
+        emit LoanCancelled(loanId, loan.borrower, loan.lender, loan.amount);
+    }
+
+    // La funzione withdrawBalance rimane uguale ma aggiungiamo un controllo sul saldo
+    function withdrawBalance() external {
+        uint256 amount = pendingWithdrawals[msg.sender];
+        require(amount > 0, "No funds to withdraw");
+        require(address(this).balance >= amount, "Insufficient contract balance");
+
+        // Azzera il saldo prima del trasferimento (prevenzione reentrancy)
+        pendingWithdrawals[msg.sender] = 0;
+        
+        // Trasferisci i fondi
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        require(success, "Transfer failed");
+
+        emit WithdrawalCompleted(msg.sender, amount);
+    }
+
+
 
     // Funzioni amministrative
     function setBorrowerLimit(address borrower, uint limit) public onlyOwner {
