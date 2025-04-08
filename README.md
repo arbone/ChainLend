@@ -1,137 +1,168 @@
-# ChainLend
+```markdown
+# 🏦 LoanManager - Sistema di Prestiti Decentralizzato
 
-ChainLend è una piattaforma decentralizzata di prestiti su blockchain che permette agli utenti di creare, gestire e partecipare a prestiti peer-to-peer.
+## 📑 Descrizione
+LoanManager è un sistema di prestiti peer-to-peer basato su blockchain sviluppato per Bonny, una startup marchigiana che mira a semplificare l'accesso al credito. Il sistema permette agli utenti di effettuare e ricevere prestiti in modo decentralizzato, con gestione automatizzata di interessi e penali.
 
-## Caratteristiche
+## 🌟 Caratteristiche Principali
 
-- Creazione e gestione prestiti
-- Sistema di staking per governance
-- Pagamenti parziali
-- Estensione durata prestiti
-- Rinegoziazione tassi di interesse
-- Sistema di governance decentralizzato
-- Gestione prestatori autorizzati
-- Sistema di emergenza
-- Limiti prestito personalizzabili
+### Core Features
+- ✅ Creazione e gestione prestiti P2P
+- 📊 Calcolo automatico di interessi e penali
+- 🔒 Sistema di sicurezza anti-reentrancy
+- ⏰ Gestione delle scadenze dei prestiti
 
-## Struttura del Progetto
+### Governance e Staking
+- 🏛️ Sistema di governance decentralizzata
+- 📈 Staking per partecipazione alla governance
+- 🗳️ Votazioni per modifiche dei tassi di interesse
+- 💼 Gestione autorizzazioni prestatori
 
-ChainLend/ ├── contracts/ │ ├── LoanManager.sol │ └── InterestLib.sol ├── scripts/ │ └── deploy.js ├── test/ │ ├── LoanManager.test.js │ └── LoanManager.extended.test.js └── hardhat.config.js
+### Monitoraggio e Trasparenza
+- 📡 Sistema di eventi per tracking completo
+- 📊 Dashboard di monitoraggio in tempo reale
+- 📝 Logging dettagliato delle operazioni
 
-
-## Tecnologie Utilizzate
-
+## 🛠 Tecnologie Utilizzate
 - Solidity ^0.8.28
 - Hardhat
+- OpenZeppelin Contracts
 - Ethers.js
-- Chai (testing)
+- Node.js
 
-## Setup
+## 📦 Installazione
 
-1. Clone il repository
+1. Clona il repository
 ```bash
-git clone https://github.com/arbone/ChainLend.git
+git clone [url-repository]
+```
 
-Installa le dipendenze
-bash
-
-Copy
+2. Installa le dipendenze
+```bash
 npm install
-Compila i contratti
-bash
+```
 
-Copy
+3. Configura le variabili d'ambiente
+```bash
+cp .env.example .env
+# Modifica .env con le tue chiavi
+```
+
+## 🚀 Deployment
+
+1. Compila i contratti
+```bash
 npx hardhat compile
-Esegui i test
-bash
+```
 
-Copy
+2. Esegui i test
+```bash
 npx hardhat test
-Deploy locale
-bash
+```
 
-Copy
-npx hardhat node
-npx hardhat run scripts/deploy.js --network localhost
-Licenza
+3. Deploy su rete di test (Sepolia)
+```bash
+npx hardhat run scripts/deploy-testnet.js --network sepolia
+```
+
+## 📊 Monitoring
+
+Avvia il sistema di monitoring:
+```bash
+npx hardhat run scripts/monitor.js --network sepolia
+```
+
+## 🧪 Test
+
+### Test Automatizzati
+```bash
+# Esegui tutti i test
+npx hardhat test
+
+# Esegui test specifici
+npx hardhat test test/loan-manager.test.js
+```
+
+### Test Manuali
+```bash
+# Crea un prestito di test
+npx hardhat run scripts/test-transaction.js --network sepolia
+```
+
+## 📝 Contratto Principale
+
+### Eventi
+- `LoanCreated`: Creazione nuovo prestito
+- `LoanRepaid`: Prestito ripagato
+- `LoanDefaulted`: Prestito in default
+- `CollateralAdded`: Aggiunto collaterale
+- `StakeAdded`: Nuovo stake aggiunto
+- `ProposalCreated`: Nuova proposta di governance
+
+### Funzioni Principali
+```solidity
+function createLoan(address lender, uint amount, uint interestRate, uint durationInDays) public payable
+function makePartialPayment(uint loanId) public payable
+function addCollateralERC20(uint256 loanId, address tokenAddress, uint256 amount) public
+function addCollateralETH(uint256 loanId) public payable
+function proposeRateChange(uint newRate) public
+function vote(uint proposalId, bool support) public
+```
+
+## 🏗 Struttura del Progetto
+```
+LoanProject/
+├── contracts/
+│   ├── LoanManager.sol
+│   └── InterestLib.sol
+├── scripts/
+│   ├── deploy-testnet.js
+│   ├── monitor.js
+│   └── test-transaction.js
+├── test/
+│   └── loan-manager.test.js
+└── hardhat.config.js
+```
+
+## 🔐 Sicurezza
+- Utilizzo di OpenZeppelin ReentrancyGuard
+- Sistema di pause per emergenze
+- Controlli di sicurezza sui collaterali
+- Validazioni input rigorose
+
+## 📋 Stato del Progetto
+- ✅ Contratti sviluppati e testati
+- ✅ Deployato su Sepolia Testnet
+- ✅ Sistema di monitoring attivo
+- ✅ Test completi implementati
+
+## 🌐 Indirizzi Contratti (Sepolia)
+- LoanManager: `[indirizzo-contratto]`
+- InterestLib: `[indirizzo-libreria]`
+
+## 📜 Licenza
 MIT
 
-text
+## 👥 Team
+- Sviluppatore: [Il tuo nome]
+- Progetto per: Bonny
 
-Copy
+## 🤝 Contribuire
+Le pull request sono benvenute. Per modifiche maggiori, apri prima una issue per discutere le modifiche proposte.
 
-5. **Commit e push del codice**:
-```bash
-git add .
-git commit -m "Initial commit: ChainLend core functionality"
-git branch -M main
-git push -u origin main
-Documentazione aggiuntiva - Crea una cartella docs con:
-docs/ARCHITECTURE.md:
+## ⚠️ Disclaimer
+Questo software è in fase di sviluppo. Usare con cautela su reti di test prima del deployment in produzione.
+```
 
-markdown
+Questo README fornisce:
+1. Panoramica completa del progetto
+2. Istruzioni dettagliate per installazione e uso
+3. Documentazione tecnica delle funzionalità
+4. Struttura del progetto
+5. Informazioni di sicurezza e stato
 
-Copy
-# Architettura ChainLend
-
-## Componenti Core
-
-### LoanManager
-- Gestione prestiti
-- Sistema di governance
-- Gestione stake
-- Sistema di emergenza
-
-### InterestLib
-- Calcolo interessi
-- Calcolo penali
-
-## Flussi di Processo
-
-1. **Creazione Prestito**
-   - Verifica limiti
-   - Trasferimento fondi
-   - Emissione eventi
-
-2. **Gestione Pagamenti**
-   - Pagamenti parziali
-   - Calcolo interessi
-   - Applicazione penali
-
-3. **Governance**
-   - Proposte
-   - Votazione
-   - Finalizzazione
-docs/SECURITY.md:
-
-markdown
-
-Copy
-# Modello di Sicurezza
-
-## Controlli Implementati
-
-1. **Controllo Accessi**
-   - Modifier onlyOwner
-   - Modifier notPaused
-   - Modifier onlyLoanParties
-
-2. **Gestione Stato**
-   - Enum per stati prestito
-   - Enum per stati proposta
-   - Mapping per saldi e autorizzazioni
-
-3. **Validazioni**
-   - Controlli importi
-   - Controlli temporali
-   - Prevenzione doppio voto
-
-## Best Practices
-
-- Utilizzo SafeMath
-- Check-Effects-Interactions pattern
-- Eventi per tracking
-Configurazione GitHub:
-Aggiungi tag appropriati
-Configura branch protection
-Aggiungi workflow GitHub Actions
+Vuoi che aggiunga o modifichi qualche sezione? Per esempio, possiamo:
+1. Aggiungere gli indirizzi reali dei contratti deployati
+2. Espandere la sezione sicurezza
+3. Aggiungere diagrammi di flusso
+4. Includere esempi di utilizzo più dettagliati 
