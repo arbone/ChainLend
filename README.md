@@ -121,20 +121,53 @@ function proposeRateChange(uint newRate) public
 function vote(uint proposalId, bool support) public
 ```
 
+markdown
+
+Copy
 ## 🏗 Struttura del Progetto
-```
-LoanProject/
-├── contracts/
-│   ├── LoanManager.sol
-│   └── InterestLib.sol
-├── scripts/
-│   ├── deploy-testnet.js
-│   ├── monitor.js
-│   └── test-transaction.js
-├── test/
-│   └── loan-manager.test.js
-└── hardhat.config.js
-```
+
+### 📑 Componenti Principali
+
+#### Smart Contracts (`/contracts`)
+- `LoanManager.sol` - Contratto principale del sistema di prestiti
+- `InterestLib.sol` - Libreria per calcoli di interessi e penali
+
+#### Scripts (`/scripts`)
+- `deploy-testnet.js` - Deployment su rete di test
+- `monitor.js` - Sistema di monitoraggio
+- `complete-test.js` - Test completi
+- `test-transaction.js` - Test transazioni
+
+#### Test (`/test`)
+- `LoanManager.test.js` - Suite completa di test unitari
+
+#### Configurazione
+- `.env` - Variabili ambiente e chiavi private
+- `hardhat.config.js` - Configurazione ambiente Hardhat
+- `deployment-testnet.json` - Settings deployment testnet
+- `package.json` - Dipendenze e script
+
+### 📊 Files di Supporto
+- `deployed-addresses.json` - Registro indirizzi contratti deployati
+- `README.md` - Documentazione del progetto
+- `.gitignore` - Configurazione Git
+
+### 🔧 Utilities
+- `/artifacts` - File compilati dei contratti
+- `/cache` - Cache di compilazione Hardhat
+- `/backup` - Backup del sistema
+- `/logs` - Log di sistema
+
+### 🛠 Moduli Aggiuntivi
+- `/ignition/modules` - Configurazioni framework Ignition
+- `/node_modules` - Dipendenze Node.js
+
+## 📚 Note sulla Struttura
+- I contratti principali sono in `/contracts`
+- Gli script di deployment e test in `/scripts`
+- I test unitari in `/test`
+- Le configurazioni nella root directory
+
 
 ## 🔐 Sicurezza
 - Utilizzo di OpenZeppelin ReentrancyGuard
@@ -165,16 +198,3 @@ Le pull request sono benvenute. Per modifiche maggiori, apri prima una issue per
 ## ⚠️ Disclaimer
 Questo software è in fase di sviluppo. Usare con cautela su reti di test prima del deployment in produzione.
 ```
-
-Questo README fornisce:
-1. Panoramica completa del progetto
-2. Istruzioni dettagliate per installazione e uso
-3. Documentazione tecnica delle funzionalità
-4. Struttura del progetto
-5. Informazioni di sicurezza e stato
-
-Vuoi che aggiunga o modifichi qualche sezione? Per esempio, possiamo:
-1. Aggiungere gli indirizzi reali dei contratti deployati
-2. Espandere la sezione sicurezza
-3. Aggiungere diagrammi di flusso
-4. Includere esempi di utilizzo più dettagliati 
