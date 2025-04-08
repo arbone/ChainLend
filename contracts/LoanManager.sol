@@ -23,6 +23,8 @@ contract LoanManager {
         LoanState state;
         uint repaidAmount;
         uint lastRepaymentDate;
+        uint penaltyAmount;      // Penali calcolate
+        uint paidPenalties;      // Penali già pagate
     }
 
     struct Proposal {
@@ -40,6 +42,7 @@ contract LoanManager {
     uint public defaultInterestRate = 10; // 10% default interest rate
     uint public constant VOTING_PERIOD = 3 days;
     uint public constant MINIMUM_VOTES = 3;
+    uint public constant DEFAULT_PENALTY_RATE = 1; // 1% penale giornaliera
 
     mapping(uint => Loan) public loans;
     mapping(uint => Proposal) public proposals;
@@ -119,6 +122,8 @@ contract LoanManager {
                 "Amount exceeds borrower limit");
 
         uint loanId = loanIdCounter++;
+
+        // Aggiunta dei nuovi campi penaltyAmount e paidPenalties
         loans[loanId] = Loan({
             borrower: msg.sender,
             lender: lender,
@@ -129,32 +134,89 @@ contract LoanManager {
             endDate: block.timestamp + (durationInDays * 1 days),
             state: LoanState.Active,
             repaidAmount: 0,
-            lastRepaymentDate: 0
+            lastRepaymentDate: 0,
+            penaltyAmount: 0,         // Inizialmente nessuna penale
+            paidPenalties: 0          // Nessuna penale pagata
         });
 
+        // Invia l'importo del prestito al prestatore
         payable(msg.sender).transfer(amount);
-        emit LoanCreated(loanId, msg.sender, lender, amount);
+
+        emit LoanCreated(loanId, msg.sender, lender, amount);   
     }
 
+    function calculateDetailedAmounts(uint loanId) public view returns (
+        uint totalDue, 
+        uint principalDue, 
+        uint interestDue, 
+        uint penaltyDue
+    ) {
+        Loan storage loan = loans[loanId];
+        require(loan.state == LoanState.Active, "Loan is not active");
+
+        // Calcola il capitale rimanente
+        principalDue = loan.amount - loan.repaidAmount;
+
+        // Calcola gli interessi usando la libreria
+        interestDue = calculateLoanInterest(loan.amount, loan.interestRate, loan.duration);
+
+        // Calcola le penali solo se il prestito è scaduto
+        if (block.timestamp > loan.endDate) {
+            uint daysLate = (block.timestamp - loan.endDate) / 1 days;
+            penaltyDue = calculateLoanPenalty(loan.amount, DEFAULT_PENALTY_RATE, daysLate);
+        }
+
+        // Il totale dovuto è la somma di capitale, interessi e penali
+        totalDue = principalDue + interestDue + penaltyDue;
+    }
+
+    // Modifica la funzione makePartialPayment
     function makePartialPayment(uint loanId) public payable notPaused {
         Loan storage loan = loans[loanId];
         require(loan.state == LoanState.Active, "Loan is not active");
         require(msg.sender == loan.borrower, "Only borrower can repay");
         require(msg.value > 0, "Payment must be greater than 0");
 
-        uint totalDue = calculateTotalDue(loanId);
-        require(loan.repaidAmount + msg.value <= totalDue, "Payment exceeds total due");
+        // Calcola gli importi dovuti
+        (uint totalDue,,,uint penaltyDue) = calculateDetailedAmounts(loanId);
 
+        // Aggiorna l'importo totale rimborsato
         loan.repaidAmount += msg.value;
+
+        // Aggiorna la data dell'ultimo pagamento
         loan.lastRepaymentDate = block.timestamp;
 
+        // Se ci sono penali, aggiorna il contatore delle penali pagate
+        if (penaltyDue > 0) {
+            uint penaltyPayment = min(msg.value, penaltyDue);
+            loan.paidPenalties += penaltyPayment;
+        }
+
+        // Trasferisci il pagamento al prestatore
         payable(loan.lender).transfer(msg.value);
+
         emit PartialPayment(loanId, msg.value);
 
+        // Verifica se il prestito è stato completamente ripagato
         if (loan.repaidAmount >= totalDue) {
             loan.state = LoanState.Repaid;
-            emit LoanRepaid(loanId, msg.sender, msg.value);
+            emit LoanRepaid(loanId, msg.sender, loan.repaidAmount);
         }
+    }
+
+    function getLoanPaymentDetails(uint loanId) public view returns (
+        uint paidPenalties,
+        uint totalPaid,
+        uint remainingAmount
+    ) {
+        Loan storage loan = loans[loanId];
+
+        uint totalDue = calculateTotalDue(loanId);
+        return (
+            loan.paidPenalties,
+            loan.repaidAmount,
+            totalDue - loan.repaidAmount
+        );
     }
 
     function extendLoanDuration(uint loanId, uint additionalDays) 
@@ -231,14 +293,19 @@ contract LoanManager {
         emit ProposalCompleted(proposalId, proposal.state == ProposalState.Approved);
     }
 
+    // Modifica la funzione calculateTotalDue
     function calculateTotalDue(uint loanId) public view returns (uint) {
         Loan storage loan = loans[loanId];
+        require(loan.state == LoanState.Active, "Loan is not active");
+
+        // Calcola gli interessi base
         uint interest = calculateLoanInterest(loan.amount, loan.interestRate, loan.duration);
         uint totalDue = loan.amount + interest;
 
+        // Aggiungi eventuali penali se il prestito è scaduto
         if (block.timestamp > loan.endDate) {
             uint daysLate = (block.timestamp - loan.endDate) / 1 days;
-            uint penalty = calculateLoanPenalty(loan.amount, 1, daysLate);
+            uint penalty = calculateLoanPenalty(loan.amount, DEFAULT_PENALTY_RATE, daysLate);
             totalDue += penalty;
         }
 
@@ -260,6 +327,12 @@ contract LoanManager {
     ) public view returns (uint) {
         return interestLib.calculatePenalty(amount, rate, numberOfDays);
     }
+
+    // Inserisci qui la funzione helper min
+    function min(uint a, uint b) internal pure returns (uint) {
+            return a < b ? a : b;
+    }
+    
 
     // Funzioni amministrative
     function setBorrowerLimit(address borrower, uint limit) public onlyOwner {
